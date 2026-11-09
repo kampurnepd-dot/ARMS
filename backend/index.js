@@ -5,6 +5,9 @@ const http = require("http");
 const { Server } = require("socket.io");
 const axios = require("axios");
 const server = http.createServer(app);
+const bookingRoute = require("./routes/booking");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
 
 const PORT = 1111;
 app.use(cors({
@@ -12,6 +15,8 @@ app.use(cors({
     credentials: true
 }));
 
+app.use(cookieParser());
+app.use(express.json());      
 app.use(cookieParser());
 
 
@@ -26,37 +31,50 @@ const io = new Server(server, {
 app.get('/', (req, res) => {
     res.send('Backend is running successfully!');
 });
-app.use('/user', userRoutes);
-app.use('/api',restrictToLoggedinUser, workRoutes);
-io.use((socket, next) => {
-    const cookies = parseCookie(
-  socket.handshake.headers.cookie || ""
-);
+app.use('/book', bookingRoute);
 
 
-    const useruid = cookies.uid;
-    if (!useruid) return next(new Error("login required"));
-    const user = ValidateToken(useruid);
-    if (!user) return next(new Error("login required"));
-    socket.user = user;
-    next();
 
-})
-io.on('connection', (socket) => {
-     socket.on('joinroom', async(data) => {
-        const {userId } = data;
-        console.log("socket id",socket.user.sub);
 
-        console.log("connection",userId);
-       
-        
-        socket.join(userId);
-         
+
+io.on("connection", (socket) => {
+    console.log("Connected:", socket.id);
+
+    socket.on("join-flight", (scheduleId) => {
+        const id = Number(scheduleId);
+
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            return;
+        }
+
+        socket.join(`flight:${id}`);
+
+        console.log(
+            `${socket.id} joined flight:${id}`
+        );
+    });
+
+    socket.on("leave-flight", (scheduleId) => {
+        const id = Number(scheduleId);
+
+        if (!Number.isSafeInteger(id) || id <= 0) {
+            return;
+        }
+
+        socket.leave(`flight:${id}`);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("Disconnected:", socket.id);
+    });
 });
 
 
+app.set("io", io);
 
-});
+
+
+
 
 
 
