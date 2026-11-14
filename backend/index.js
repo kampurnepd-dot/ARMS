@@ -6,6 +6,7 @@ const { Server } = require("socket.io");
 const axios = require("axios");
 const server = http.createServer(app);
 const bookingRoute = require("./routes/booking");
+const paymentRoute = require("./routes/payment");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
@@ -33,7 +34,7 @@ app.get('/', (req, res) => {
 });
 app.use('/book', bookingRoute);
 
-
+app.use('/payment', paymentRoute);
 
 
 
@@ -70,9 +71,11 @@ io.on("connection", (socket) => {
 });
 
 
+
 app.set("io", io);
 
-
+require("./workers/expiryworker");
+require("./workers/refundWorker");
 
 
 

@@ -117,7 +117,7 @@ export default function SeatsPage() {
         ? res.seats
         : seatnos.map((n) => ({ seat_number: n }));
       patch({ seats: { seats: assigned, total_amount: res?.total_amount ?? booking.total + seatFees } });
-      navigate("/confirmation");
+      navigate("/payment");
     } catch (e) {
       if (e.code === "session_expired") setStatus("expired");
       else {

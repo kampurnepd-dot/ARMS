@@ -515,7 +515,18 @@ await conn.commit();
 await bookingqueue.add("expirebooking",{booking:bookingId},
       {
         delay: 600000,
-        jobId: `expire-${bookingId}`
+        jobId: `expire-${bookingId}`,
+
+        attempts:3,
+
+        backoff:{
+          type:"exponential",
+          delay:1000
+        },
+        removeOnComplete:true
+
+
+
     }
    );
     
@@ -636,4 +647,4 @@ async function seat_price_avaliability(req,res) {
 
 
 
-module.exports = {FlightSearch,listAirports,booking,seat_reserve,seat_price_avaliability};
+module.exports = {FlightSearch,listAirports,booking,seat_reserve,seat_price_avaliability,bookingqueue};
