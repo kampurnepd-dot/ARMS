@@ -1,5 +1,6 @@
 
 const pool = require("../config/pool");
+const { invalidateFlightCache } = require("../utils/flightCache");
 
 // READ: Get all flights
 async function getFlights(req, res) {
@@ -29,6 +30,9 @@ async function createFlight(req, res) {
             VALUES (?, ?)`,
             [flight_number, airline_id]
         );
+
+        // Invalidate flight search cache
+        await invalidateFlightCache();
 
         res.status(201).json({
             message: "Flight added successfully",
@@ -62,6 +66,9 @@ async function updateFlight(req, res) {
             });
         }
 
+        // Invalidate flight search cache
+        await invalidateFlightCache();
+
         res.json({
             message: "Flight updated successfully"
         });
@@ -89,6 +96,9 @@ async function deleteFlight(req, res) {
                 message: "Flight not found"
             });
         }
+
+        // Invalidate flight search cache
+        await invalidateFlightCache();
 
         res.json({
             message: "Flight deleted successfully"

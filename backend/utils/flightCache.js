@@ -24,4 +24,7 @@ async function invalidateFlightCache() {
     console.log("Flight cache invalidated");
 }
 
-module.exports = { invalidateFlightCache };
+module.exports = {
+    invalidateFlightCache,
+    invalidateAirportCache
+};

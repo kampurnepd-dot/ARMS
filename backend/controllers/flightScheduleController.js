@@ -1,4 +1,4 @@
-
+const { invalidateFlightCache } = require("../utils/flightCache");
 const pool = require("../config/pool");
 
 // READ: Get all flight schedules
@@ -49,6 +49,7 @@ async function createSchedule(req, res) {
                 gate_id ?? null
             ]
         );
+        await invalidateFlightCache();
 
         res.status(201).json({
             message: "Flight schedule created successfully",
@@ -108,6 +109,7 @@ async function updateSchedule(req, res) {
                 message: "Schedule not found"
             });
         }
+        await invalidateFlightCache();
 
         res.json({
             message: "Flight schedule updated successfully"
@@ -136,7 +138,7 @@ async function deleteSchedule(req, res) {
                 message: "Schedule not found"
             });
         }
-
+        await invalidateFlightCache();
         res.json({
             message: "Flight schedule deleted successfully"
         });

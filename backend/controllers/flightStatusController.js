@@ -1,5 +1,6 @@
 
 const pool = require("../config/pool");
+const { invalidateFlightCache } = require("../utils/flightCache");
 
 // UPDATE: Change flight status and record history
 async function updateFlightStatus(req, res) {
@@ -62,6 +63,7 @@ async function updateFlightStatus(req, res) {
         );
 
         await connection.commit();
+        await invalidateFlightCache();
 
         res.json({
             message: "Flight status updated successfully",

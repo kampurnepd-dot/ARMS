@@ -1,6 +1,11 @@
 
 const pool = require("../config/pool");
 
+const {
+    invalidateFlightCache,
+    invalidateAirportCache
+} = require("../utils/flightCache");
+
 // READ: Get all airports
 async function getAirports(req, res) {
     try {
@@ -9,6 +14,7 @@ async function getAirports(req, res) {
         );
 
         res.json(rows);
+
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -16,7 +22,6 @@ async function getAirports(req, res) {
         });
     }
 }
-
 
 // CREATE: Add a new airport
 async function createAirport(req, res) {
@@ -29,6 +34,10 @@ async function createAirport(req, res) {
             VALUES (?, ?, ?, ?)`,
             [airport_code, name, city, country]
         );
+
+        // Invalidate both Redis caches
+        await invalidateFlightCache();
+        await invalidateAirportCache();
 
         res.status(201).json({
             message: "Airport added successfully",
@@ -62,6 +71,10 @@ async function updateAirport(req, res) {
             });
         }
 
+        // Invalidate both Redis caches
+        await invalidateFlightCache();
+        await invalidateAirportCache();
+
         res.json({
             message: "Airport updated successfully"
         });
@@ -89,6 +102,10 @@ async function deleteAirport(req, res) {
                 message: "Airport not found"
             });
         }
+
+        // Invalidate both Redis caches
+        await invalidateFlightCache();
+        await invalidateAirportCache();
 
         res.json({
             message: "Airport deleted successfully"
