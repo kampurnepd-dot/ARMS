@@ -1,12 +1,15 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useSearch } from "../context/SearchContext";
 import AirportInput from "../components/AirportInput";
+import ManageForm from "../components/ManageForm";
 import { toISODate } from "../utils";
 
 export default function SearchPage() {
   const { search, setSearch, airports, airportsError } = useSearch();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "manage" ? "manage" : "flights";
   const today = toISODate(new Date());
 
   const [from, setFrom] = useState(search?.from ?? null);
@@ -31,41 +34,58 @@ export default function SearchPage() {
   return (
     <main className="page">
       <section className="hero">
-        <h1>Find your flight.</h1>
-        <p>Compare fares across every airline and book in a few taps.</p>
+        <h1>{tab === "manage" ? "Manage your booking." : "Find your flight."}</h1>
+        <p>
+          {tab === "manage"
+            ? "View your trip, check your seats and cancel with your booking reference."
+            : "Compare fares across every airline and book in a few taps."}
+        </p>
       </section>
 
-      <form className="search-card" onSubmit={submit}>
-        <div className="search-row">
-          <AirportInput label="From" placeholder="Leaving from?" value={from} onChange={setFrom} airports={airports} excludeCode={to?.airport_code} />
-          <button type="button" className="swap" onClick={swap} aria-label="Swap airports">⇄</button>
-          <AirportInput label="To" placeholder="Going to?" value={to} onChange={setTo} airports={airports} excludeCode={from?.airport_code} />
+      <div className="tabs" role="tablist">
+        <button role="tab" aria-selected={tab === "flights"} className={tab === "flights" ? "tab on" : "tab"} onClick={() => setParams({})}>
+          Flights
+        </button>
+        <button role="tab" aria-selected={tab === "manage"} className={tab === "manage" ? "tab on" : "tab"} onClick={() => setParams({ tab: "manage" })}>
+          Manage booking
+        </button>
+      </div>
 
-          <div className="field">
-            <label htmlFor="date">Departure</label>
-            <input id="date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
-            <span className="sub">
-              {date ? new Date(date + "T00:00").toLocaleDateString("en-GB", { weekday: "long" }) : ""}
-            </span>
-          </div>
+      {tab === "manage" && <ManageForm />}
 
-          <div className="field">
-            <label>Travellers</label>
-            <div className="stepper">
-              <button type="button" onClick={() => setPassengers((p) => Math.max(1, p - 1))} aria-label="Fewer passengers">−</button>
-              <strong>{passengers}</strong>
-              <button type="button" onClick={() => setPassengers((p) => Math.min(9, p + 1))} aria-label="More passengers">+</button>
+      {tab === "flights" && (
+        <form className="search-card" onSubmit={submit}>
+          <div className="search-row">
+            <AirportInput label="From" placeholder="Leaving from?" value={from} onChange={setFrom} airports={airports} excludeCode={to?.airport_code} />
+            <button type="button" className="swap" onClick={swap} aria-label="Swap airports">⇄</button>
+            <AirportInput label="To" placeholder="Going to?" value={to} onChange={setTo} airports={airports} excludeCode={from?.airport_code} />
+
+            <div className="field">
+              <label htmlFor="date">Departure</label>
+              <input id="date" type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
+              <span className="sub">
+                {date ? new Date(date + "T00:00").toLocaleDateString("en-GB", { weekday: "long" }) : ""}
+              </span>
             </div>
-            <span className="sub">{passengers === 1 ? "1 Passenger" : `${passengers} Passengers`}</span>
+
+            <div className="field">
+              <label>Travellers</label>
+              <div className="stepper">
+                <button type="button" onClick={() => setPassengers((p) => Math.max(1, p - 1))} aria-label="Fewer passengers">−</button>
+                <strong>{passengers}</strong>
+                <button type="button" onClick={() => setPassengers((p) => Math.min(9, p + 1))} aria-label="More passengers">+</button>
+              </div>
+              <span className="sub">{passengers === 1 ? "1 Passenger" : `${passengers} Passengers`}</span>
+            </div>
           </div>
-        </div>
 
-        {airportsError && <p className="error">Couldn’t load airports: {airportsError}</p>}
+          {airportsError && <p className="error">Couldn’t load airports: {airportsError}</p>}
 
-        <div className="search-actions">
-          <button className="primary" disabled={!valid}>Search flights</button>
-        </div>
-      </form>
+          <div className="search-actions">
+            <button className="primary" disabled={!valid}>Search flights</button>
+          </div>
+        </form>
+      )}
     </main>
   );
 }

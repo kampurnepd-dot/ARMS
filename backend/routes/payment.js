@@ -4,12 +4,15 @@ const router = express.Router();
 const { Initiatepayment, passPayment } = require("../controllers/Payment");
 const { initiatecancellation, passCancellation } = require("../controllers/cancellation");
 const { getBookingSummary, getRefundStatus } = require("../controllers/summary");
+const {lookupBooking }= require("../controllers/lookup");
 
 // Express 4 does not catch errors thrown inside async handlers (for example a Redis failure),
 // so this passes them to the error handler instead of leaving the request hanging
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 // mounted at /payment in server.js
+router.post("/lookup", wrap(lookupBooking));
+
 router.get("/summary", wrap(getBookingSummary));
 
 router.post("/initiate", wrap(Initiatepayment));

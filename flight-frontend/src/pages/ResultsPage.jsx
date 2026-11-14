@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { useSearch } from "../context/SearchContext";
 import { useBooking } from "../context/BookingContext";
 import { searchFlights } from "../api";
+import { useSocket } from "../context/SocketContext";
+import { cabinOfSeat } from "../config";
 import FareModal from "../components/FareModal";
 import {
   addDays, fmtDay, fmtDuration, fmtLongDate, fmtPrice, fmtShortDate,
@@ -58,6 +60,57 @@ export default function ResultsPage() {
   }, [rows, sort]);
 
   const cabinNames = useMemo(() => [...new Set(rows.map((r) => r.cabin_class))], [rows]);
+
+  const { socket } = useSocket();
+
+  // join the live room of every flight on screen
+  const idsKey = [...new Set(rows.map((r) => r.schedule_id))].join(",");
+  useEffect(() => {
+    if (!idsKey) return;
+    const ids = idsKey.split(",").map(Number);
+    const join = () => ids.forEach((id) => socket.emit("join-flight", id));
+
+    // someone reserved seats on one of these flights: lower that cabin's count straight away
+    const onUpdate = ({ schedule_id, seats }) => {
+      const taken = {};
+      for (const seat of seats) {
+        const cabin = cabinOfSeat(seat.seat_number);
+        if (cabin) taken[cabin] = (taken[cabin] || 0) + 1;
+      }
+      setRows((prev) =>
+        prev.map((r) =>
+          Number(r.schedule_id) === Number(schedule_id) && taken[r.cabin_class]
+            ? { ...r, seats_available: Math.max(0, Number(r.seats_available) - taken[r.cabin_class]) }
+            : r
+        )
+      );
+    };
+
+    if (socket.connected) join();
+    socket.on("connect", join);
+    socket.on("seat-update", onUpdate);
+    return () => {
+      ids.forEach((id) => socket.emit("leave-flight", id));
+      socket.off("connect", join);
+      socket.off("seat-update", onUpdate);
+    };
+  }, [socket, idsKey]);
+
+  // seats that are released (expired holds, cancellations) send no event, so also refresh quietly
+  useEffect(() => {
+    if (!search) return;
+    const t = setInterval(() => {
+      searchFlights({
+        dept_airport_code: search.from.airport_code,
+        arr_airport_code: search.to.airport_code,
+        date: search.date,
+        passengers: search.passengers,
+      })
+        .then(setRows)
+        .catch(() => {});
+    }, 40000);
+    return () => clearInterval(t);
+  }, [search]);
 
   if (!search) return <Navigate to="/" replace />;
 
@@ -181,7 +234,7 @@ export default function ResultsPage() {
                     <span className="from">Starts at</span>
                     <strong>{fmtPrice(c.price)}</strong>
                     {pax > 1 && <small>{fmtPrice(c.price * pax)} for {pax}</small>}
-                    {c.seats <= 5 && <small className="low">Only {c.seats} left</small>}
+                    <small className={c.seats <= 5 ? "low" : ""}>{c.seats <= 5 ? `Only ${c.seats} left` : `${c.seats} seats left`}</small>
                   </button>
                 );
               })}

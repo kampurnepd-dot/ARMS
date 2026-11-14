@@ -7,17 +7,8 @@ import { getSeats, reserveSeats } from "../api";
 import FlightSummary from "../components/FlightSummary";
 import FareBar from "../components/FareBar";
 import { fmtPrice } from "../utils";
-
-function useCountdown(expiresAt) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
-  }, []);
-  return expiresAt ? Math.max(0, Math.round((expiresAt - now) / 1000)) : 0;
-}
-
-const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+import { mmss, useCountdown } from "../hooks";
+import { rowRange } from "../config";
 
 export default function SeatsPage() {
   const { search } = useSearch();
@@ -65,10 +56,12 @@ export default function SeatsPage() {
   const plan = useMemo(() => {
     const rows = new Map();
     const letters = new Set();
+    const range = rowRange(selection?.cabin);
     for (const s of seats) {
       const m = /^(\d+)([A-Za-z])$/.exec(s.seat_number);
       if (!m) continue;
       const row = Number(m[1]);
+      if (range && (row < range[0] || row > range[1])) continue; // seat belongs to another cabin
       const l = m[2].toUpperCase();
       letters.add(l);
       if (!rows.has(row)) rows.set(row, {});
@@ -80,7 +73,7 @@ export default function SeatsPage() {
       rows: [...rows.entries()].sort((a, b) => a[0] - b[0]),
       aisle: cols.length >= 4 ? Math.floor(cols.length / 2) - 1 : -1,
     };
-  }, [seats]);
+  }, [seats, selection?.cabin]);
 
   if (!search || !selection || !booking) return <Navigate to="/" replace />;
 
@@ -106,6 +99,28 @@ export default function SeatsPage() {
     setPicked(next);
     const nxt = passengers.findIndex((_, i) => !next[i]);
     if (nxt !== -1) setActive(nxt);
+  };
+
+  // "Skip" = auto-assign. The server would take the lowest seat ids on the aircraft (any cabin),
+  // so choose the seats here: free seats first, only from the booked cabin.
+  const autoPick = () => {
+    const range = rowRange(selection.cabin);
+    const order = (n) => {
+      const m = /^(\d+)([A-Za-z])$/.exec(n);
+      return m ? Number(m[1]) * 100 + m[2].toUpperCase().charCodeAt(0) : 1e9;
+    };
+    const free = seats
+      .filter((x) => {
+        const m = /^(\d+)/.exec(x.seat_number);
+        return !x.occupied && m && (!range || (Number(m[1]) >= range[0] && Number(m[1]) <= range[1]));
+      })
+      .sort((a, b) => a.price - b.price || order(a.seat_number) - order(b.seat_number))
+      .slice(0, passengers.length);
+    if (free.length < passengers.length) {
+      setNotice("There aren’t enough free seats left in this cabin for everyone.");
+      return;
+    }
+    submit(free.map((x) => x.seat_number));
   };
 
   const submit = async (seatnos) => {
@@ -240,7 +255,7 @@ export default function SeatsPage() {
       </aside>
 
       <FareBar total={booking.total + seatFees}>
-        <button className="ghost" disabled={saving || expired} onClick={() => submit([])}>Skip</button>
+        <button className="ghost" disabled={saving || expired} onClick={autoPick}>Skip</button>
         <button
           className="primary"
           disabled={saving || expired || !allPicked}

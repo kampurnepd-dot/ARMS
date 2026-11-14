@@ -7,6 +7,7 @@ import { BookingProvider } from "./context/BookingContext";
 import { SocketProvider } from "./context/SocketContext";
 import "./styles.css";
 import "./booking.css";
+import "./manage.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
