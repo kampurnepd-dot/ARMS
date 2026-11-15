@@ -1,4 +1,3 @@
-
 import AirportManagementPage from "./pages/AirportManagementPage";
 import AircraftManagementPage from "./pages/AircraftManagementPage";
 import GateManagementPage from "./pages/GateManagementPage";
@@ -6,6 +5,9 @@ import FlightManagementPage from "./pages/FlightManagementPage";
 import FlightScheduleManagementPage from "./pages/FlightScheduleManagementPage";
 import FlightStatusManagementPage from "./pages/FlightStatusManagementPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import CheckInPage from "./pages/CheckInPage";
+import BaggageManagementPage from "./pages/BaggageManagementPage";
+import StaffManagementPage from "./pages/StaffManagementPage";
 
 import { Link, Route, Routes } from "react-router-dom";
 import SearchPage from "./pages/SearchPage";
@@ -49,6 +51,9 @@ export default function App() {
         <Route path="/admin/flights" element={<FlightManagementPage />} />
         <Route path="/admin/schedules" element={<FlightScheduleManagementPage />} />
         <Route path="/admin/flight-status" element={<FlightStatusManagementPage />} />
+        <Route path="/admin/check-in" element={<CheckInPage />} />
+        <Route path="/admin/baggage" element={<BaggageManagementPage />} />
+        <Route path="/admin/staff" element={<StaffManagementPage />} />
 
         <Route path="*" element={<SearchPage />} />
       </Routes>

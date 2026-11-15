@@ -1,0 +1,35 @@
+/* extra styles for Check-in, Baggage and Staff admin pages (uses the variables and classes of admin.css) */
+.ops-badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 500; background: var(--blue-soft); color: var(--blue); white-space: nowrap; }
+.ops-badge.ok { background: #e3f6e8; color: #17692e; }
+.ops-badge.warn { background: #fff3d6; color: #8a5a00; }
+.ops-badge.bad { background: #fdecea; color: var(--danger); }
+.ops-badge.muted { background: #eceef5; color: var(--muted); }
+
+.ops-hint { color: var(--muted); font-size: 15px; margin: 0 0 16px; }
+.ops-empty { color: var(--muted); padding: 12px 0; }
+.admin-actions.tight { margin-top: 0; }
+.admin-small { padding: 7px 14px; font-size: 14px; border-radius: 8px; border: 0; font-weight: 500; }
+
+.ops-dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px 24px; margin: 0 0 8px; }
+.ops-dl dt { color: var(--muted); font-size: 14px; }
+.ops-dl dd { margin: 2px 0 0; font-size: 17px; font-weight: 500; }
+
+/* boarding pass */
+.ops-pass { display: grid; grid-template-columns: 1fr auto; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: #fff; margin-top: 8px; }
+.ops-pass-main { padding: 22px 26px; }
+.ops-pass-side { padding: 22px 26px; background: var(--blue); color: #fff; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 190px; border-left: 2px dashed #fff; }
+.ops-pass-side small { opacity: 0.8; }
+.ops-pass-side strong { font-size: 30px; font-weight: 500; }
+.ops-pass h3 { margin: 0 0 2px; font-size: 24px; font-weight: 500; }
+.ops-pass .muted { color: var(--muted); }
+.ops-pass-times { display: flex; gap: 32px; flex-wrap: wrap; margin: 16px 0; }
+.ops-pass-times div { display: flex; flex-direction: column; }
+.ops-pass-times time { font-size: 24px; font-weight: 500; }
+.ops-pass-times span { color: var(--muted); font-size: 14px; }
+
+.admin-table td .admin-row-actions { margin-top: 0; }
+
+@media (max-width: 700px) {
+  .ops-pass { grid-template-columns: 1fr; }
+  .ops-pass-side { border-left: 0; border-top: 2px dashed #fff; }
+}

@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import "../admin.css";
 
@@ -33,6 +32,21 @@ const sections = [
     description: "Update flight status and view changes.",
     path: "/admin/flight-status",
   },
+  {
+    title: "Check-in & Boarding",
+    description: "Check in passengers, view boarding passes and board passengers.",
+    path: "/admin/check-in",
+  },
+  {
+    title: "Baggage Management",
+    description: "Register baggage, track it and update its status.",
+    path: "/admin/baggage",
+  },
+  {
+    title: "Staff Management",
+    description: "View staff availability and assign shifts.",
+    path: "/admin/staff",
+  },
 ];
 
 export default function AdminDashboardPage() {
@@ -40,7 +54,7 @@ export default function AdminDashboardPage() {
     <main className="admin-page">
       <div className="admin-heading">
         <h1>Admin Dashboard</h1>
-        <p>Manage airports, aircraft, gates and flight operations.</p>
+        <p>Manage airports, aircraft, gates, flight operations, check-in, baggage and staff.</p>
       </div>
 
       <div className="admin-dashboard-grid">

@@ -15,6 +15,11 @@ const gateRoutes = require("./routes/gate");
 const flightRoutes = require("./routes/flight");
 const flightScheduleRoutes = require("./routes/flightSchedule");
 const flightStatusRoutes = require("./routes/flightStatus");
+const baggageRoutes = require("./routes/baggage");
+const checkinRoutes = require("./routes/checkin");
+const staffRoutes = require("./routes/staff");
+
+
 
 const PORT = 1111;
 app.use(cors({
@@ -50,6 +55,9 @@ app.use('/api/gates', gateRoutes);
 app.use('/api/flights', flightRoutes);
 app.use('/api/flight-schedules', flightScheduleRoutes);
 app.use('/api/flight-status', flightStatusRoutes);
+app.use('/api/baggage', baggageRoutes);
+app.use('/api/checkin', checkinRoutes);
+app.use('/api/staff', staffRoutes);
 
 
 
