@@ -52,6 +52,7 @@ app.use('/api/flight-schedules', flightScheduleRoutes);
 app.use('/api/flight-status', flightStatusRoutes);
 
 
+
 io.on("connection", (socket) => {
     console.log("Connected:", socket.id);
 
