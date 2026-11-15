@@ -24,6 +24,29 @@ async function invalidateFlightCache() {
     console.log("Flight cache invalidated");
 }
 
+async function invalidateAirportCache() {
+    let cursor = "0";
+
+    do {
+        const [nextCursor, keys] = await client.scan(
+            cursor,
+            "MATCH",
+            "airport:*",
+            "COUNT",
+            100
+        );
+
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+            await client.del(...keys);
+        }
+
+    } while (cursor !== "0");
+
+    console.log("Airport cache invalidated");
+}
+
 module.exports = {
     invalidateFlightCache,
     invalidateAirportCache
