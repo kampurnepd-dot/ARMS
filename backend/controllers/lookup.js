@@ -1,7 +1,4 @@
-// NEW file: controllers/lookup.js  (does not change any existing controller)
-// Lets a customer reopen a booking with booking reference + contact email.
-// It creates the same guest_session cookie/Redis key your other controllers already use,
-// so /payment/summary, /payment/cancel/initiate etc. work afterwards.
+
 const pool = require("../config/pool");
 const client = require("../client");
 const crypto = require("crypto");
@@ -56,7 +53,3 @@ async function lookupBooking(req, res) {
 
 module.exports = { lookupBooking };
 
-/* ---- add to routes/payment.js ----
-const { lookupBooking } = require("../controllers/lookup");
-router.post("/lookup", wrap(lookupBooking));
-*/

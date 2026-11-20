@@ -4,14 +4,14 @@ const { Queue } = require("bullmq");
 const crypto = require("crypto");
 const client = require("../client");
 
-// same secret as booking.js
+
 const GUEST_SECRET = process.env.GUEST_SECRET || "change-this-secret";
 
 
 const refundQueue = new Queue("refundQueue",{
     connection:{
         host:"127.0.0.1",
-        port:6379, // FIX: was 6397, the worker listens on 6379
+        port:6379, 
     },
 })
 
@@ -19,7 +19,7 @@ const refundQueue = new Queue("refundQueue",{
 async function initiatecancellation(req, res) {
     const { ticket_id, cancellation_reason } = req.body;
 
-    // booking id comes from the Redis guest session (same as seat_reserve in booking.js)
+    
     const guest_token = req.cookies?.guest_session;
     if(!guest_token) return res.status(401).json({ error: "session_expired" });
     const hashedtoken = crypto.createHmac("sha256" ,guest_token)
@@ -57,7 +57,7 @@ async function initiatecancellation(req, res) {
                 on fs.schedule_id = b.schedule_id
             where b.booking_id = ?
             for update of b
-        `, [Number(booking_id)]); // FIX: "of b" locks only the booking, not the whole flight schedule row
+        `, [Number(booking_id)]); 
 
         if (booking.length === 0) {
             await conn.rollback();
@@ -196,7 +196,7 @@ async function passCancellation(req,res){
             on b.booking_id = c.booking_id
             where c.cancellation_id  = ?
 
-        `,[cancellation_id]); // FIX: await, and the missing comma after c.cancellation_status
+        `,[cancellation_id]); 
 
         if(cancel.length === 0){
             await conn.rollback();
@@ -214,7 +214,7 @@ async function passCancellation(req,res){
             on fs.schedule_id = b.schedule_id
             where b.booking_id = ?
             for update of b
-            `,[cancel[0].booking_id]); // FIX: select departure_time (3-hour check used undefined), cancel is an array, lock booking so two ticket cancellations can't miss "last ticket"
+            `,[cancel[0].booking_id]); 
 
             if(booking.length === 0){
 
@@ -236,7 +236,7 @@ async function passCancellation(req,res){
             FOR UPDATE
         `, [Number(cancellation_id)]);
 
-        if(c.length === 0){ // FIX: guard before c[0]
+        if(c.length === 0){ 
             await conn.rollback();
             return res.status(401).json({
                 success:false,
@@ -351,9 +351,9 @@ async function passCancellation(req,res){
             FOR UPDATE
         `, [current.booking_id]);
 
-        let refundId = null; // FIX: remember the refund id, enqueue only after commit
+        let refundId = null; 
 
-        //refund
+
         if (payments.length > 0) {
 
             const refundAmount =
@@ -370,7 +370,7 @@ async function passCancellation(req,res){
                     refund_reference
                 )
                 VALUES (?, ?, 'Requested', ?)
-            `, [cancellation_id, refundAmount,refundReference]); // FIX: 4 columns need 4 values
+            `, [cancellation_id, refundAmount,refundReference]); 
 
             refundId = refundreceipt.insertId;
 
@@ -403,7 +403,7 @@ async function passCancellation(req,res){
 
         await conn.commit();
 
-        // FIX: moved here from inside the transaction, so the worker never sees a refund row that isn't committed yet
+        
         if(refundId){
             try{
                 await refundQueue.add("refundthis",{
@@ -420,7 +420,7 @@ async function passCancellation(req,res){
                 }
             )
             }catch(queueErr){
-                // refund row is saved as 'Requested', so it can be re-queued later
+                
                 console.error("Could not queue refund",refundId,queueErr);
             }
         }

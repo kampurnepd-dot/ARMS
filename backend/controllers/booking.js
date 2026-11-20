@@ -1,9 +1,9 @@
 const pool = require("../config/pool");
 const client = require("../client");
 const crypto = require("crypto");
-const { Queue } = require("bullmq"); // FIX: Queue was never imported (npm i bullmq)
+const { Queue } = require("bullmq"); 
 
-// FIX: guests have no user.password, so a server secret is used instead
+
 const GUEST_SECRET = process.env.GUEST_SECRET || "change-this-secret";
 
 const bookingqueue = new Queue("bookingqueue",{
@@ -174,14 +174,14 @@ async function booking(req,res) {
      
     const conn = await pool.getConnection();
 
-    let bookingId;          // FIX: declared here so the second try block can use it
-    let bookingReference;   // FIX: same
-    let totalCost;          // FIX: same
+    let bookingId;          
+    let bookingReference;   
+    let totalCost;          
 
     try {
-        await conn.beginTransaction(); // FIX: was start_Transcation
+        await conn.beginTransaction(); 
 
-        const [flights] = await conn.query( // FIX: was pool.query (must use the transaction connection)
+        const [flights] = await conn.query( 
         `select fs.schedule_id, ff.cabin_class, ff.base_price
         from  Flight_Schedule  as fs
         join  Flight_Fare as ff
@@ -190,7 +190,7 @@ async function booking(req,res) {
         ,[schedule_id,cabin_class]
      );
 
-        // FIX: flights[0] crashed when no fare was found
+        
         if (flights.length === 0) {
             await conn.rollback();
             return res.status(404).json({
@@ -229,7 +229,7 @@ let pass_id = pass.insertId;
 
    }
 
-   await conn.commit(); // FIX: commit was missing, so nothing was saved
+   await conn.commit(); 
 
     }
     catch(error) {
@@ -267,16 +267,16 @@ let pass_id = pass.insertId;
 try {
 
 
- const guest_token = crypto.randomBytes(16).toString("hex"); // FIX: toString() without "hex" gives garbage
-    const hashedtoken = crypto.createHmac("sha256" ,guest_token) // FIX: createHmac was not imported
-         .update(GUEST_SECRET) // FIX: user.password does not exist
+ const guest_token = crypto.randomBytes(16).toString("hex"); 
+    const hashedtoken = crypto.createHmac("sha256" ,guest_token) 
+         .update(GUEST_SECRET) 
          .digest("hex");
 
 
-await client.set(`guest:${hashedtoken}`, // FIX: was hashedToken (different name)
+await client.set(`guest:${hashedtoken}`, 
             String(bookingId), "EX", 600 );
 
-  res.cookie("guest_session", guest_token, { // FIX: was guestToken (different name)
+  res.cookie("guest_session", guest_token, { 
             httpOnly: true,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -311,20 +311,20 @@ catch(error) {
 
 async function seat_reserve(req,res) {
      const guest_token = req.cookies?.guest_session;
-    if(!guest_token) return res.status(401).json({ error: "session_expired" }); // FIX: guest_session is not a variable
-     const hashedtoken = crypto.createHmac("sha256" ,guest_token) // FIX: createHmac import
-         .update(GUEST_SECRET) // FIX: user.password does not exist
+    if(!guest_token) return res.status(401).json({ error: "session_expired" }); 
+     const hashedtoken = crypto.createHmac("sha256" ,guest_token) 
+         .update(GUEST_SECRET) 
          .digest("hex");
 
-         const bookingId = await client.get(`guest:${hashedtoken}` ); // FIX: was hashedToken
+         const bookingId = await client.get(`guest:${hashedtoken}` );
            if(!bookingId) return res.status(401).json({ error: "session_expired" });
 
            const {seatnos = []}  =  req.body;
 
-            let selectedSeats; // FIX: was never declared
+            let selectedSeats; 
             const conn = await pool.getConnection();
            try {
-            await conn.beginTransaction(); // FIX: was start_Transcation
+            await conn.beginTransaction(); 
         const [bookings] = await conn.query(
             `SELECT schedule_id, booking_status
              FROM Booking
@@ -446,7 +446,7 @@ const seatMap = new Map(
              LIMIT ?
             for update
             `,[aircraftId,scheduleId,passengerCount]
-            ) // FIX: alias "s" was used but never defined
+            ) 
  if (seats.length !== passengerCount) {
                 throw new Error("Not enough seats available");
             }
@@ -476,7 +476,7 @@ const seatMap = new Map(
          
 let manualSelection = seatnos.length > 0;
 let seatFees = 0;
-for (let i = 0; i < passengers.length; i++) { // FIX: booking_passengers is not defined, variable is "passengers"
+for (let i = 0; i < passengers.length; i++) { 
     const passengerId =
         passengers[i].booking_passenger_id;
 
@@ -542,7 +542,7 @@ io.to(`flight:${scheduleId}`).emit("seat-update", {
     }))
 });     
          
-// FIX: no response was sent on success, so the request hung
+
 return res.status(200).json({
     success: true,
     seats: selectedSeats.map(seat => ({
@@ -563,11 +563,11 @@ catch(error) {
             await conn.rollback();
         }
 
-        console.error("Seat reserve error:", error); // FIX: label said "Booking error"
+        console.error("Seat reserve error:", error); 
 
         return res.status(500).json({
             success: false,
-            message: "Seat reservation failed" // FIX: message said "Booking creation failed"
+            message: "Seat reservation failed" 
         });
 
 
@@ -590,15 +590,15 @@ catch(error) {
 async function seat_price_avaliability(req,res) {
     try{
      const guest_token = req.cookies?.guest_session;
-    if(!guest_token) return res.status(401).json({ error: "session_expired" }); // FIX: guest_session is not a variable
-     const hashedtoken = crypto.createHmac("sha256" ,guest_token) // FIX: createHmac import
+    if(!guest_token) return res.status(401).json({ error: "session_expired" }); 
+     const hashedtoken = crypto.createHmac("sha256" ,guest_token) 
          .update(GUEST_SECRET) // FIX: user.password does not exist
          .digest("hex");
 
-         const bookingId = await client.get(`guest:${hashedtoken}` ); // FIX: was hashedToken
+         const bookingId = await client.get(`guest:${hashedtoken}` ); 
            if(!bookingId) return res.status(401).json({ error: "session_expired" });
 
-   const [seats] = await pool.query( // FIX: conn does not exist in this function
+   const [seats] = await pool.query( 
     `SELECT
         s.seat_id,
         s.seat_number,

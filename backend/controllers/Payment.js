@@ -3,14 +3,14 @@ const crypto = require("crypto");
 const {bookingqueue} = require("./booking");
 const client = require("../client");
 
-// same secret as booking.js
+
 const GUEST_SECRET = process.env.GUEST_SECRET || "change-this-secret";
 
 
 async function Initiatepayment(req,res){
     const {total_fare, paymentMethod} = req.body;
 
-    // booking id comes from the Redis guest session (same as seat_reserve in booking.js)
+    
     const guest_token = req.cookies?.guest_session;
     if(!guest_token) return res.status(401).json({ error: "session_expired" });
     const hashedtoken = crypto.createHmac("sha256" ,guest_token)
@@ -29,7 +29,7 @@ async function Initiatepayment(req,res){
     }
 
     const conn = await pool.getConnection();
-    try{ // FIX: try now starts here, so every early return below still reaches finally and releases the connection
+    try{ 
         await conn.beginTransaction();
         const [tf] = await conn.query(`
             select booking_id , total_amount , booking_status
@@ -37,7 +37,7 @@ async function Initiatepayment(req,res){
             for update 
             `,[booking_id]);
 
-        // FIX: also check booking is Pending (your message already said "not pending")
+        
         if(tf.length ===0 || tf[0].booking_status !== "Pending" || tf[0].total_amount != total_fare){
             await conn.rollback(); // FIX: await
             return res.status(400).json({
@@ -49,10 +49,10 @@ async function Initiatepayment(req,res){
             select payment_id from 
             Payment where booking_id = ? 
             and payment_status in ('Pending','Success')
-            for update`,[booking_id]) ; // FIX: a Failed payment must not block a retry
+            for update`,[booking_id]) ; 
 
             if(exists.length >0){
-                await conn.rollback(); // FIX: await
+                await conn.rollback(); 
 
                 return res.status(409).json({
                     success:false,
@@ -70,7 +70,7 @@ async function Initiatepayment(req,res){
 
         await conn.commit();
 
-        // FIX: cache a real payment object (same shape as passPayment) and never let a Redis error turn a committed payment into a 500
+    
         try{
             await client.set(`payment:${payment_details.insertId}`,
                 JSON.stringify({
@@ -140,7 +140,7 @@ async function passPayment(req,res){
             where payment_id  = ?
             for update
 
-            `,[payment_id]); // FIX: lock payment + booking so duplicate callbacks / the expiry worker can't race
+            `,[payment_id]); 
 
             if(payments.length === 0){
                 await conn.rollback();
@@ -181,11 +181,11 @@ async function passPayment(req,res){
                 const [restorePayment] = await conn.query(`
                     update Payment
                     set payment_status = "Failed"
-                    where payment_id = ?`,[payment_id]); // FIX: await, "Failed" spelling, and the missing WHERE (it updated every payment)
+                    where payment_id = ?`,[payment_id]); 
 
                 await conn.commit();
 
-                try{ // FIX: Redis error must not give a 500 after commit
+                try{ 
                     await client.set(
     `payment:${payment_id}`,
     JSON.stringify({
@@ -213,41 +213,41 @@ async function passPayment(req,res){
                     update Payment
                     set payment_status = "Success"
                     where payment_id =?
-                    `,[payment_id]) // FIX: await
+                    `,[payment_id]) 
 
                 const [changeBooking] = await conn.query(`
                     update Booking
                     set booking_status = "Confirmed"
                     where booking_id = ?
-                    `,[current.booking_id]) // FIX: await
+                    `,[current.booking_id]) 
 
                 const [getbookingp]= await conn.query(`
                     select booking_passenger_id 
                     from Booking_Passenger
                     where booking_id = ?
-                    `,[current.booking_id]); // FIX: await
+                    `,[current.booking_id]); 
 
                 if(getbookingp.length === 0){
-                    await conn.rollback(); // FIX: rollback (commit would leave payment Success + booking Confirmed with no tickets)
+                    await conn.rollback(); 
                     return res.status(400).json({
                         message:"Booking Passenger not found"
                     });
                 }
 
-                // FIX: one ticket per passenger, each with its share of the amount
+                
                 const perTicket = Math.round(Number(current.amount) / getbookingp.length * 100) / 100;
 
                 for(const bp of getbookingp){
-                    // FIX: ticket_number column is VARCHAR(20), a full UUID (36 chars) doesn't fit
+                    
                     const ticketNum = crypto.randomUUID().replace(/-/g,"").slice(0,16).toUpperCase();
 
-                    // FIX: 5 columns need 5 values
+                
                     const [generateTicket] = await conn.query(`
                         INSERT INTO Ticket ( ticket_number, booking_passenger_id, schedule_id,
                          fare_amount, tax_amount)
                         values(?,?,?,?,?)`,[ticketNum,bp.booking_passenger_id,current.schedule_id,perTicket,0]);
 
-                    // FIX: link the seat reservation to its ticket (cancellation looks the seat up by ticket_id)
+                    
                     await conn.query(`
                         update Seat_Reservation
                         set ticket_id = ?
@@ -260,7 +260,7 @@ async function passPayment(req,res){
 
                     await conn.commit();
 
-                    try{ // FIX: Redis / queue problems after commit must not cause a 500 or a hang
+                    try{ 
                         await client.set(
     `payment:${payment_id}`,
     JSON.stringify({
@@ -276,7 +276,7 @@ async function passPayment(req,res){
                 
                 const expirebooking =  await bookingqueue.getJob(`expire-${current.booking_id}`);
 
-                // FIX: getState is a method and returns a promise; remove() must be awaited
+                
                 if(expirebooking && await expirebooking.getState() === "delayed"){
                     await expirebooking.remove();
                 }
@@ -293,7 +293,7 @@ async function passPayment(req,res){
                 });
             }
 
-            // FIX: result "Refunded" fell through with no response
+            
             await conn.rollback();
             return res.status(400).json({
                 success:false,
@@ -301,7 +301,7 @@ async function passPayment(req,res){
             });
         }catch(err){
              await conn.rollback();
-             console.error(err); // FIX: so you can see what failed
+             console.error(err); 
               return res.status(500).json({
                 success:false,
                 message:"Error"
@@ -313,5 +313,5 @@ async function passPayment(req,res){
 
 }
 
-// FIX: add this if you don't already export these somewhere else
+
 module.exports = { Initiatepayment, passPayment };
